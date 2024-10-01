@@ -165,16 +165,6 @@ export interface DcaExecutedTradeEvent extends Event {
 }
 
 // =========================================================================
-// User Fetch
-// =========================================================================
-
-export interface ApiDcaCreateUserBody {
-	walletAddress: SuiAddress;
-	bytes: string;
-	signature: string;
-}
-
-// =========================================================================
 //  Owned DCAs
 // =========================================================================
 
