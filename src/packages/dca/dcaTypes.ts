@@ -70,7 +70,7 @@ export interface DcaOrderFailedTradeObject {
 	reason: DcaFailedTradeReason | undefined;
 }
 
-export interface DcaOrdertStrategyObject {
+export interface DcaOrderStrategyObject {
 	minPrice: Balance;
 	maxPrice: Balance;
 }
@@ -89,7 +89,7 @@ export interface DcaOrderOverviewObject {
 	totalTrades: number;
 	tradesRemaining: number;
 	maxSlippageBps: number;
-	strategy?: DcaOrdertStrategyObject;
+	strategy?: DcaOrderStrategyObject;
 	recipient?: SuiAddress;
 	progress: number;
 	created: {

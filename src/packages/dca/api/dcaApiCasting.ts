@@ -5,7 +5,7 @@ import {
 	DcaExecutedTradeEvent,
 	DcaOrderObject,
 	DcaOrderTradeObject,
-	DcaOrdertStrategyObject,
+	DcaOrderStrategyObject,
 } from "../dcaTypes";
 import {
 	DcaClosedOrderEventOnChain,
@@ -118,7 +118,7 @@ export class DcaApiCasting {
 		const outputCoinType = Helpers.addLeadingZeroesToType(
 			String(response.coin_buy)
 		);
-		const strategy: DcaOrdertStrategyObject | undefined =
+		const strategy: DcaOrderStrategyObject | undefined =
 			BigInt(response.min_amount_out) === BigInt(0) &&
 			BigInt(response.max_amount_out) === Casting.u64MaxBigInt
 				? undefined
