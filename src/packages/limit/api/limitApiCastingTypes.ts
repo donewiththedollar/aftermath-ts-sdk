@@ -10,6 +10,7 @@ import {
 	Timestamp,
 	TransactionDigest,
 } from "../../../types";
+import { LimitIndexerOrderStatus } from "../limitTypes";
 
 // =========================================================================
 // Objects
@@ -60,9 +61,9 @@ export type LimitIndexerOrdersResponse = {
 
 export type LimitIndexerOrderResponse = {
 	order_object_id: ObjectId;
-	coin_sell: String;
+	coin_sell: string;
 	coin_sell_amount: BigIntAsString;
-	coin_buy: String;
+	coin_buy: string;
 	coin_buy_min_amount_out: BigIntAsString;
 	recipient: SuiAddress;
 	create_order_tx_info: {
@@ -74,7 +75,8 @@ export type LimitIndexerOrderResponse = {
 		timestamp: Timestamp;
 	};
 	expiry_timestamp_ms: Timestamp;
-	status: "Active" | "Canceled" | "Failed" | "Filled";
+	status: LimitIndexerOrderStatus | undefined;
+	error: string | undefined;
 };
 
 // =========================================================================

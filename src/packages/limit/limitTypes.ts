@@ -36,6 +36,13 @@ export interface ApiLimitTransactionForCancelOrderBody {
 //  Limit Order Fetch
 // =========================================================================
 
+export type LimitIndexerOrderStatus =
+	| "Active"
+	| "Canceled"
+	| "Failed"
+	| "Filled"
+	| "Expired";
+
 export interface LimitOrdersObject {
 	active: LimitOrderObject[];
 	executed: LimitOrderObject[];
@@ -61,7 +68,8 @@ export interface LimitOrderObject {
 		tnxDigest: TransactionDigest;
 	};
 	expiry: Timestamp;
-	status: string;
+	status: LimitIndexerOrderStatus | undefined;
+	error: string | undefined;
 }
 
 // =========================================================================

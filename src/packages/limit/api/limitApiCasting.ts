@@ -73,6 +73,7 @@ export class LimitApiCasting {
 				: undefined,
 			expiry: response.expiry_timestamp_ms,
 			status: response.status,
+			error: response.error,
 		};
 	};
 }
