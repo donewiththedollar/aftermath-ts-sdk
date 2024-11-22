@@ -111,6 +111,8 @@ export type DcaIndexerOrderResponse = {
 	next_execution_timestamp_ms: string;
 	trades: DcaIndexerOrderTradeResponse[];
 	failed: DcaIndexerOrderFailedTradesResponse[];
+	integrator_fee_bps: BigIntAsString;
+	integrator_fee_recipient: SuiAddress;
 };
 
 export type DcaIndexerOrderFailedTradesResponse = {

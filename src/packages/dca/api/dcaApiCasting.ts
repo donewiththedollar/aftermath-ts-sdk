@@ -206,6 +206,12 @@ export class DcaApiCasting {
 							tnxDigest: lastTrade.digest,
 					  }
 					: undefined,
+				integratorFeeBps: Number(response.integrator_fee_bps ?? 0),
+				integratorFeeRecipient: !response.integrator_fee_recipient
+					? undefined
+					: Helpers.addLeadingZeroesToType(
+							response.integrator_fee_recipient
+					  ),
 			},
 			failed: failed,
 			trades: tradesPrepared,

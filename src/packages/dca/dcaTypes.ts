@@ -104,6 +104,8 @@ export interface DcaOrderOverviewObject {
 		time: Timestamp;
 		tnxDigest: TransactionDigest;
 	};
+	integratorFeeBps: number | undefined;
+	integratorFeeRecipient: string | undefined;
 }
 
 export interface DcaOrderObject {
