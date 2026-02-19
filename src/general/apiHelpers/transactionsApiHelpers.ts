@@ -18,7 +18,7 @@ import {
 } from "../../types";
 import { AftermathApi } from "../providers/aftermathApi";
 import { SuiTransactionBlockResponseQuery } from "@mysten/sui/client";
-import { Helpers } from "../utils";
+import { Helpers } from "../utils/helpers";
 
 export class TransactionsApiHelpers {
 	// =========================================================================
@@ -99,6 +99,24 @@ export class TransactionsApiHelpers {
 		return (
 			await this.fetchSetGasBudgetForTx({ tx: await tx })
 		).serialize();
+	};
+
+	public fetchBase64TxKindFromTx = async (inputs: {
+		tx: Transaction | undefined;
+	}): Promise<SerializedTransaction | undefined> => {
+		const { tx } = inputs;
+
+		if (!tx) return;
+
+		const txBytes = await tx.build({
+			// NOTE: is this safe ?
+
+			client: this.Provider?.provider,
+
+			onlyTransactionKind: true,
+		});
+
+		return Buffer.from(txBytes).toString("base64");
 	};
 
 	// =========================================================================

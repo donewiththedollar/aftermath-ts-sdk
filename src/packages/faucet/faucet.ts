@@ -25,7 +25,7 @@ export class Faucet extends Caller {
 
 	constructor(
 		config?: CallerConfig,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, "faucet");
 	}
@@ -48,10 +48,8 @@ export class Faucet extends Caller {
 	//  Transactions
 	// =========================================================================
 
-	public async getRequestCoinTransaction(
-		inputs: ApiFaucetRequestBody
-	): Promise<Transaction> {
-		return this.fetchApiTransaction("request", inputs);
+	public async getRequestCoinTransaction(inputs: ApiFaucetRequestBody) {
+		return this.useProvider().buildRequestCoinTx(inputs);
 	}
 
 	public async getMintSuiFrenTransaction(inputs: ApiFaucetMintSuiFrenBody) {

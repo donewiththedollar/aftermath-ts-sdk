@@ -16,7 +16,6 @@ import { NftAmmApi } from "../../packages/nftAmm/api/nftAmmApi";
 import { ReferralVaultApi } from "../../packages/referralVault/api/referralVaultApi";
 import { ModuleName, MoveErrorCode, ObjectId, UniqueId } from "../../types";
 import { PerpetualsApi } from "../../packages/perpetuals/api/perpetualsApi";
-import { OracleApi } from "../../packages/oracle/api/oracleApi";
 import { FarmsApi } from "../../packages/farms/api/farmsApi";
 import { SuiClient } from "@mysten/sui/client";
 import { DcaApi } from "../../packages/dca/api/dcaApi";
@@ -206,11 +205,6 @@ export class AftermathApi {
 	 * Creates a new `PerpetualsApi` instance for futures or perpetual derivatives on Sui.
 	 */
 	public Perpetuals = () => new PerpetualsApi(this);
-
-	/**
-	 * Creates a new `OracleApi` instance for price or data feed oracles.
-	 */
-	public Oracle = () => new OracleApi(this);
 
 	/**
 	 * Creates a new `FarmsApi` instance for yield farming or liquidity mining interactions.

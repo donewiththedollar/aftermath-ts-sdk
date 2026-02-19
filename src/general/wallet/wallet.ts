@@ -25,7 +25,7 @@ export class Wallet extends Caller {
 	constructor(
 		public readonly address: SuiAddress,
 		config?: CallerConfig,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, `wallet`);
 	}

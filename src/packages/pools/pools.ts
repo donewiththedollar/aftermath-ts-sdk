@@ -153,7 +153,7 @@ export class Pools extends Caller {
 	 */
 	constructor(
 		config?: CallerConfig,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, "pools");
 	}

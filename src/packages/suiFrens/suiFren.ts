@@ -30,7 +30,7 @@ export class SuiFren extends Caller {
 		config?: CallerConfig,
 		public readonly isStaked: boolean = false,
 		public readonly isOwned: boolean = false,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, "sui-frens");
 	}

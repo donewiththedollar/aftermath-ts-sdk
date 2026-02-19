@@ -31,7 +31,7 @@ export class StakedSuiFren extends Caller {
 		public readonly info: StakedSuiFrenInfo,
 		config?: CallerConfig,
 		public readonly isOwned: boolean = false,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, "sui-frens");
 		this.suiFren = new SuiFren(info.suiFren, this.config, true, isOwned);

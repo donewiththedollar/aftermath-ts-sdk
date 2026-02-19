@@ -25,6 +25,7 @@ import { Coin } from "../../coin";
 import { TransactionsApiHelpers } from "../../../general/apiHelpers/transactionsApiHelpers";
 import { EventsApiHelpers } from "../../../general/apiHelpers/eventsApiHelpers";
 import { Sui } from "../../sui";
+import { Helpers } from "../../../general/utils";
 
 export class FaucetApi {
 	// =========================================================================
@@ -34,7 +35,6 @@ export class FaucetApi {
 	private static readonly constants = {
 		moduleNames: {
 			faucet: "faucet",
-			faucetRegistry: "faucet_registry",
 			suiFrensGenesisWrapper: "genesis_wrapper",
 		},
 		eventNames: {
@@ -74,93 +74,41 @@ export class FaucetApi {
 	}
 
 	// =========================================================================
-	//  Transaction Builders
+	//  Inspections
 	// =========================================================================
 
-	public fetchRequestCustomCoinAmountTx = async (inputs: {
-		walletAddress: SuiAddress;
-		coinType: CoinType;
-		amount: bigint;
-	}): Promise<Transaction> => {
-		const { walletAddress, coinType, amount } = inputs;
-		const tx = new Transaction();
-		tx.setSender(walletAddress);
-
-		this.requestCoinAmountTx({
-			tx,
-			coinType,
-			amount,
-		});
-
-		return tx;
-	};
-
-	public fetchBuildMintSuiFrenTx = async (
-		inputs: ApiFaucetMintSuiFrenBody
-	) => {
-		const { walletAddress, mintFee, suiFrenType } = inputs;
-
-		const tx = new Transaction();
-		tx.setSender(walletAddress);
-
-		const suiPaymentCoinId =
-			await this.Provider.Coin().fetchCoinWithAmountTx({
-				tx,
-				walletAddress,
-				coinType: Coin.constants.suiCoinType,
-				coinAmount: mintFee,
-			});
-
-		this.mintSuiFrenTx({ tx, suiPaymentCoinId, suiFrenType });
-
-		return tx;
+	public fetchSupportedCoins = async (): Promise<CoinType[]> => {
+		const addCoinEvents = await this.fetchAddCoinEvents({});
+		const coins = addCoinEvents.events.map(
+			(event) => "0x" + event.coinType
+		);
+		return coins;
 	};
 
 	// =========================================================================
-	//  Transcation Commands
+	//  Transaction Commands
 	// =========================================================================
 
-	public addCoinTx = (inputs: {
-		tx: Transaction;
-		treasuryCapId: ObjectId;
-		treasuryCapType: AnyObjectType;
-	}) => {
-		const { tx, treasuryCapId, treasuryCapType } = inputs;
+	// public addCoinTx = (inputs: {
+	// 	tx: Transaction;
+	// 	treasuryCapId: ObjectId;
+	// 	treasuryCapType: AnyObjectType;
+	// }) => {
+	// 	const { tx, treasuryCapId, treasuryCapType } = inputs;
 
-		return tx.moveCall({
-			target: TransactionsApiHelpers.createTxTarget(
-				this.addresses.packages.faucet,
-				FaucetApi.constants.moduleNames.faucet,
-				"add_coin"
-			),
-			typeArguments: [treasuryCapType],
-			arguments: [
-				tx.object(this.addresses.objects.faucet),
-				tx.object(treasuryCapId),
-			],
-		});
-	};
-
-	public requestCoinAmountTx = (inputs: {
-		tx: Transaction;
-		coinType: CoinType;
-		amount: Balance;
-	}) => {
-		const { tx, coinType, amount } = inputs;
-
-		return tx.moveCall({
-			target: TransactionsApiHelpers.createTxTarget(
-				this.addresses.packages.faucet,
-				FaucetApi.constants.moduleNames.faucet,
-				"request_coin_amount"
-			),
-			typeArguments: [coinType],
-			arguments: [
-				tx.object(this.addresses.objects.faucet),
-				tx.pure.u64(amount),
-			],
-		});
-	};
+	// 	return tx.moveCall({
+	// 		target: TransactionsApiHelpers.createTxTarget(
+	// 			this.addresses.packages.faucet,
+	// 			FaucetApi.constants.moduleNames.faucet,
+	// 			"add_coin"
+	// 		),
+	// 		typeArguments: [treasuryCapType],
+	// 		arguments: [
+	// 			tx.object(this.addresses.objects.faucet),
+	// 			tx.object(treasuryCapId),
+	// 		],
+	// 	});
+	// };
 
 	public requestCoinTx = (inputs: {
 		tx: Transaction;
@@ -172,7 +120,7 @@ export class FaucetApi {
 			target: TransactionsApiHelpers.createTxTarget(
 				this.addresses.packages.faucet,
 				FaucetApi.constants.moduleNames.faucet,
-				"request_coin"
+				"request_default_amount"
 			),
 			typeArguments: [coinType],
 			arguments: [tx.object(this.addresses.objects.faucet)],
@@ -201,6 +149,35 @@ export class FaucetApi {
 					: suiPaymentCoinId, // Coin
 			],
 		});
+	};
+
+	// =========================================================================
+	//  Transaction Builders
+	// =========================================================================
+
+	public buildRequestCoinTx = Helpers.transactions.createBuildTxFunc(
+		this.requestCoinTx
+	);
+
+	public fetchBuildMintSuiFrenTx = async (
+		inputs: ApiFaucetMintSuiFrenBody
+	) => {
+		const { walletAddress, mintFee, suiFrenType } = inputs;
+
+		const tx = new Transaction();
+		tx.setSender(walletAddress);
+
+		const suiPaymentCoinId =
+			await this.Provider.Coin().fetchCoinWithAmountTx({
+				tx,
+				walletAddress,
+				coinType: Coin.constants.suiCoinType,
+				coinAmount: mintFee,
+			});
+
+		this.mintSuiFrenTx({ tx, suiPaymentCoinId, suiFrenType });
+
+		return tx;
 	};
 
 	// =========================================================================

@@ -4,6 +4,7 @@ import {
 	SuiTransactionBlockResponse,
 } from "@mysten/sui/client";
 import { SuiNetwork } from "./suiTypes";
+import { Transaction } from "@mysten/sui/transactions";
 
 /**
  * Represents a token or currency balance in the system, defined as a bigint.
@@ -15,6 +16,7 @@ export type Balance = bigint;
  * precision (e.g., decimal-like math).
  */
 export type IFixed = bigint;
+export type SuiCheckpoint = bigint;
 
 /**
  * Represents a gas budget for transactions. Typically a raw `number`.
@@ -392,4 +394,12 @@ export interface CallerConfig {
 	 * Access token used for authenticated requests, if required.
 	 */
 	accessToken?: string;
+}
+
+export interface ApiTransactionResponse {
+	txKind: SerializedTransaction;
+}
+
+export interface SdkTransactionResponse {
+	tx: Transaction;
 }

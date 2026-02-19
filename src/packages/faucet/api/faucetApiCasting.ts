@@ -3,6 +3,8 @@ import {
 	FaucetMintCoinEventOnChain,
 } from "./faucetApiCastingTypes";
 import { FaucetAddCoinEvent, FaucetMintCoinEvent } from "../faucetTypes";
+import { Helpers } from "../../../general/utils";
+import { Coin } from "../../coin";
 
 export class FaucetApiCasting {
 	// =========================================================================
@@ -13,11 +15,14 @@ export class FaucetApiCasting {
 		eventOnChain: FaucetMintCoinEventOnChain
 	): FaucetMintCoinEvent => {
 		const fields = eventOnChain.parsedJson;
+		const coinType = Helpers.addLeadingZeroesToType(
+			new Coin(eventOnChain.type).innerCoinType
+		);
 		return {
-			minter: fields.user,
-			coinMinted: fields.type,
-			balanceMinted: BigInt(fields.amount),
-			timestamp: eventOnChain.timestampMs,
+			coinType,
+			minter: Helpers.addLeadingZeroesToType(fields.user),
+			amount: BigInt(fields.amount),
+			timestamp: Number(eventOnChain.timestampMs),
 			txnDigest: eventOnChain.id.txDigest,
 			type: eventOnChain.type,
 		};
@@ -27,10 +32,12 @@ export class FaucetApiCasting {
 		eventOnChain: FaucetAddCoinEventOnChain
 	): FaucetAddCoinEvent => {
 		const fields = eventOnChain.parsedJson;
+		const coinType = Helpers.addLeadingZeroesToType(
+			new Coin(eventOnChain.type).innerCoinType
+		);
 		return {
-			coinSymbol: fields.symbol,
-			coinType: fields.type,
-			timestamp: eventOnChain.timestampMs,
+			coinType,
+			timestamp: Number(eventOnChain.timestampMs),
 			txnDigest: eventOnChain.id.txDigest,
 			type: eventOnChain.type,
 		};

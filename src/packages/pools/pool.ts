@@ -80,7 +80,7 @@ export class Pool extends Caller {
 	constructor(
 		public readonly pool: PoolObject,
 		config?: CallerConfig,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, `pools/${pool.objectId}`);
 		this.pool = pool;

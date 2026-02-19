@@ -6,11 +6,17 @@ import {
 	EventsWithCursor,
 	IndexerEventsWithCursor,
 	SerializedTransaction,
+	SuiAddress,
 	SuiNetwork,
 	UniqueId,
 	Url,
 } from "../../types";
 import { Helpers } from "./helpers";
+
+type ResponseWithTxKind = { txKind: SerializedTransaction } & (
+	| Record<string, unknown>
+	| {}
+);
 
 export class Caller {
 	protected readonly apiBaseUrl?: Url;
@@ -36,17 +42,31 @@ export class Caller {
 	//  Private Methods
 	// =========================================================================
 
+	private static nullToUndefined<T>(value: T): T {
+		// Reviver already converts null -> undefined for object properties,
+		// but this ensures top-level `null` also becomes `undefined`.
+		return value === null ? (undefined as unknown as T) : value;
+	}
+
 	private static async fetchResponseToType<OutputType>(
 		response: Response,
 		disableBigIntJsonParsing: boolean
 	): Promise<OutputType> {
 		if (!response.ok) throw new Error(await response.text());
 
+		// Keep your existing stringify->parse approach so BigInt parsing stays consistent.
 		const json = JSON.stringify(await response.json());
+
 		const output = disableBigIntJsonParsing
-			? JSON.parse(json)
-			: Helpers.parseJsonWithBigint(json);
-		return output as OutputType;
+			? JSON.parse(json, (_key, value) =>
+					value === null ? undefined : value
+			  )
+			: Helpers.parseJsonWithBigint(
+					json /* unsafeStringNumberConversion */
+			  );
+
+		// Ensure top-level `null` becomes `undefined` too.
+		return Caller.nullToUndefined(output) as OutputType;
 	}
 
 	// =========================================================================
@@ -106,17 +126,14 @@ export class Caller {
 		const apiCallUrl = this.urlForApiCall(url);
 
 		const headers = {
-			// "Content-Type": "text/plain",
 			"Content-Type": "application/json",
 			...(this.config.accessToken
 				? { Authorization: `Bearer ${this.config.accessToken}` }
 				: {}),
 		};
+
 		const uncastResponse = await (body === undefined
-			? fetch(apiCallUrl, {
-					headers,
-					signal,
-			  })
+			? fetch(apiCallUrl, { headers, signal })
 			: fetch(apiCallUrl, {
 					method: "POST",
 					body: JSON.stringify(body),
@@ -126,27 +143,65 @@ export class Caller {
 
 		const response = await Caller.fetchResponseToType<Output>(
 			uncastResponse,
-			options?.disableBigIntJsonParsing!!
+			!!options?.disableBigIntJsonParsing
 		);
 		return response;
 	}
 
 	protected async fetchApiTransaction<BodyType = undefined>(
 		url: Url,
-		body?: BodyType,
+		body?: BodyType & { walletAddress?: SuiAddress },
 		signal?: AbortSignal,
 		options?: {
 			disableBigIntJsonParsing?: boolean;
+			txKind?: boolean;
 		}
 	) {
-		return Transaction.from(
-			await this.fetchApi<SerializedTransaction, BodyType>(
-				url,
-				body,
-				signal,
-				options
-			)
+		const txKind = await this.fetchApi<SerializedTransaction, BodyType>(
+			url,
+			body,
+			signal,
+			options
 		);
+		const tx = options?.txKind
+			? Transaction.fromKind(txKind)
+			: Transaction.from(txKind);
+		// NOTE: is this needed ?
+		if (body?.walletAddress) {
+			tx.setSender(body.walletAddress);
+		}
+		return tx;
+	}
+
+	protected async fetchApiTxObject<
+		BodyType extends object,
+		OutputType extends ResponseWithTxKind
+	>(
+		url: Url,
+		body?: BodyType & { walletAddress?: SuiAddress },
+		signal?: AbortSignal,
+		options?: { disableBigIntJsonParsing?: boolean; txKind?: boolean }
+	): Promise<
+		Omit<Extract<OutputType, ResponseWithTxKind>, "txKind"> & {
+			tx: Transaction;
+		}
+	> {
+		const response = await this.fetchApi<OutputType, BodyType>(
+			url,
+			body,
+			signal,
+			options
+		);
+
+		const tx = Transaction.fromKind(response.txKind);
+
+		if (body?.walletAddress) {
+			tx.setSender(body.walletAddress);
+		}
+
+		const { txKind, ...rest } = response;
+		type Rest = Omit<Extract<OutputType, ResponseWithTxKind>, "txKind">;
+		return { ...(rest as Rest), tx };
 	}
 
 	protected async fetchApiEvents<EventType, BodyType = ApiEventsBody>(
@@ -195,4 +250,93 @@ export class Caller {
 	protected setAccessToken = (accessToken: UniqueId) => {
 		this.config.accessToken = accessToken;
 	};
+
+	/**
+	 * Open a generic websocket stream.
+	 * - Automatically parses inbound JSON via `Helpers.parseJsonWithBigint`.
+	 * - Automatically enables BigInt -> "123n" serialization (same one-liner as `fetchApi`).
+	 */
+	protected openWsStream<WsRequestMessage, WsResponseMessage>(args: {
+		path: Url;
+		onMessage: (message: WsResponseMessage) => void;
+		onOpen?: (ev: Event) => void;
+		onError?: (ev: Event) => void;
+		onClose?: (ev: CloseEvent) => void;
+	}) {
+		const { path, onMessage, onOpen, onError, onClose } = args;
+
+		/**
+		 * Build a WS URL using the same base the HTTP calls use, plus this.apiEndpoint and apiUrlPrefix.
+		 * Mirrors `urlForApiCall`, but swaps http(s) -> ws(s).
+		 */
+		const buildWsUrl = (path: string): Url => {
+			if (this.apiBaseUrl === undefined) {
+				throw new Error("no apiBaseUrl: unable to open websocket");
+			}
+
+			// Normalize base & path
+			const baseHttp = this.apiBaseUrl.replace(/\/+$/, "");
+			const baseWs = baseHttp.replace(/^http(s?):\/\//, "ws$1://");
+
+			// Prefix with endpoint + service prefix (same pattern as fetch)
+			const prefix = `${this.apiEndpoint}/${this.apiUrlPrefix}`;
+			const normalizedPrefix = prefix.replace(/\/+$/, "");
+			const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+
+			return `${baseWs}/${normalizedPrefix}${
+				normalizedPath ? "/" + normalizedPath : ""
+			}`;
+		};
+
+		const url = buildWsUrl(path);
+		const ws = new WebSocket(url);
+
+		ws.addEventListener("open", (ev) => onOpen?.(ev));
+		ws.addEventListener("error", (ev) => onError?.(ev));
+		ws.addEventListener("close", (ev) => onClose?.(ev));
+
+		ws.addEventListener("message", (ev) => {
+			// Auto BigInt parsing for any "123n" encountered
+			try {
+				const data = Helpers.parseJsonWithBigint(
+					ev.data as string
+				) as WsResponseMessage;
+				onMessage?.(data);
+			} catch {
+				// Optionally surface raw text here
+			}
+		});
+
+		// Match fetchApi’s BigInt JSON behavior (install on-demand before send)
+		const enableBigIntJson = () => {
+			(() => {
+				(BigInt.prototype as any).toJSON = function () {
+					return this.toString() + "n";
+				};
+			})();
+		};
+
+		const send = (value: WsRequestMessage) => {
+			if (ws.readyState !== WebSocket.OPEN)
+				throw new Error("WebSocket is not open");
+			enableBigIntJson();
+			ws.send(JSON.stringify(value));
+		};
+
+		// const sendRaw = (raw: string) => {
+		// 	if (ws.readyState !== WebSocket.OPEN)
+		// 		throw new Error("WebSocket is not open");
+		// 	// If caller already stringified with BigInt, assume they handled JSON shape
+		// 	ws.send(raw);
+		// };
+
+		const close = () => ws.close();
+
+		return {
+			ws,
+			send,
+			// sendRaw,
+			close,
+		};
+	}
 }

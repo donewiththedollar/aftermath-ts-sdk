@@ -23,7 +23,7 @@ export interface ConfigAddresses {
 	router?: RouterAddresses;
 	referralVault?: ReferralVaultAddresses;
 	perpetuals?: PerpetualsAddresses;
-	oracle?: OracleAddresses;
+	perpetualsVaults?: PerpetualsVaultsAddresses;
 	farms?: FarmsAddresses;
 	dynamicGas?: DynamicGasAddresses;
 	scallop?: ScallopAddresses;
@@ -45,7 +45,6 @@ export interface FaucetAddresses {
 	};
 	objects: {
 		faucet: ObjectId;
-		faucetRegistry: ObjectId;
 		suiFrensMint: ObjectId;
 	};
 }
@@ -100,7 +99,7 @@ export interface PoolsAddresses {
 export interface DaoFeePoolsAddresses {
 	packages: {
 		amm: SuiAddress;
-		events: SuiAddress
+		events: SuiAddress;
 	};
 	objects: {
 		version: ObjectId;
@@ -153,12 +152,17 @@ export interface ReferralVaultAddresses {
 
 export interface PerpetualsAddresses {
 	packages: {
-		perpetuals: SuiAddress;
+		// perpetuals: SuiAddress;
 		events: SuiAddress;
 	};
 	objects: {
-		adminCapability: ObjectId;
 		registry: ObjectId;
+	};
+}
+
+export interface PerpetualsVaultsAddresses {
+	other: {
+		createLpCoinPackageCompilation: string;
 	};
 }
 
@@ -176,13 +180,6 @@ export interface FarmsAddresses {
 
 export interface DynamicGasAddresses {
 	sponsorAddress: SuiAddress;
-}
-
-export interface OracleAddresses {
-	packages: {
-		events: SuiAddress;
-		oracleReader: SuiAddress;
-	};
 }
 
 export interface ScallopAddresses {

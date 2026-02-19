@@ -49,7 +49,7 @@ export class FarmsStakingPool extends Caller {
 	constructor(
 		public stakingPool: FarmsStakingPoolObject,
 		config?: CallerConfig,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, "farms");
 		this.stakingPool = stakingPool;

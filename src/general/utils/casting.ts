@@ -15,7 +15,6 @@ import { Helpers } from "../..";
 import { BcsTypeName } from "../types/castingTypes";
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { NftsApiCasting } from "../nfts/nftsApiCasting";
-import { OracleApiCasting } from "../../packages/oracle/api/oracleApiCasting";
 
 /**
  * A central utility class for casting and conversion routines across
@@ -60,10 +59,6 @@ export class Casting {
 	 */
 	public static perpetuals = PerpetualsApiCasting;
 	/**
-	 * Casting utilities for oracle-based data or price feed objects.
-	 */
-	public static oracle = OracleApiCasting;
-	/**
 	 * Casting utilities for farming data (yield farms, locked positions, etc.).
 	 */
 	public static farms = FarmsApiCasting;
@@ -89,6 +84,11 @@ export class Casting {
 	 * The maximum unsigned 64-bit integer value as a bigint (0xFFFFFFFFFFFFFFFF).
 	 */
 	public static u64MaxBigInt: bigint = BigInt("0xFFFFFFFFFFFFFFFF");
+
+	/**
+	 * The maximum signed 64-bit integer value as a bigint.
+	 */
+	public static i64MaxBigInt: bigint = BigInt("9223372036854775807");
 
 	// =========================================================================
 	//  Functions

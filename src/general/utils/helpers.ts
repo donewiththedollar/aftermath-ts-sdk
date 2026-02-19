@@ -23,7 +23,6 @@ import { EventsApiHelpers } from "../apiHelpers/eventsApiHelpers";
 import { InspectionsApiHelpers } from "../apiHelpers/inspectionsApiHelpers";
 import { ObjectsApiHelpers } from "../apiHelpers/objectsApiHelpers";
 import { TransactionsApiHelpers } from "../apiHelpers/transactionsApiHelpers";
-import { Casting } from "./casting";
 import {
 	Transaction,
 	TransactionObjectArgument,
@@ -304,6 +303,9 @@ export class Helpers {
 		unsafeStringNumberConversion = false
 	) =>
 		JSON.parse(json, (key, value) => {
+			// convert null -> undefined everywhere
+			if (value === null) return undefined;
+
 			// handles bigint casting
 			if (typeof value === "string" && /^-?\d+n$/.test(value)) {
 				return BigInt(value.slice(0, -1));
@@ -378,6 +380,18 @@ export class Helpers {
 		return maxIndex;
 	};
 
+	private static uniqueObjectArray<T>(arr: T[]): T[] {
+		const seen = new Set<string>();
+		return arr.filter((obj) => {
+			const str = JSON.stringify(obj);
+			if (seen.has(str)) {
+				return false;
+			}
+			seen.add(str);
+			return true;
+		});
+	}
+
 	/**
 	 * Returns a new array with unique elements from the input array,
 	 * preserving the order of first occurrences.
@@ -385,7 +399,12 @@ export class Helpers {
 	 * @param arr - The original array.
 	 * @returns An array of unique items.
 	 */
-	public static uniqueArray = <T>(arr: T[]): T[] => [...new Set(arr)];
+	public static uniqueArray = <T>(arr: T[]): T[] =>
+		arr.length <= 0
+			? []
+			: typeof arr[0] === "object"
+			? Helpers.uniqueObjectArray(arr)
+			: [...new Set(arr)];
 
 	/**
 	 * Returns a Promise that resolves after a specified number of milliseconds.
@@ -420,10 +439,8 @@ export class Helpers {
 
 		for (let index = 0; index < array.length; index++) {
 			const item = array[index];
-			if(func(item, index,array))
-				trues[trues.length] = item;
-			else
-				falses[falses.length] = item;
+			if (func(item, index, array)) trues[trues.length] = item;
+			else falses[falses.length] = item;
 		}
 
 		return [trues, falses];
@@ -487,7 +504,7 @@ export class Helpers {
 			amount -
 			BigInt(
 				Math.floor(
-					Casting.normalizeSlippageTolerance(slippage) *
+					(slippage / 100) *
 						Number(amount)
 				)
 			)
@@ -503,7 +520,7 @@ export class Helpers {
 	 * @returns The float after applying slippage.
 	 */
 	public static applySlippage = (amount: number, slippage: Slippage) => {
-		return amount - Casting.normalizeSlippageTolerance(slippage) * amount;
+		return amount - (slippage / 100) * amount;
 	};
 
 	/**
@@ -741,6 +758,12 @@ export class Helpers {
 		const { errorMessage } = inputs;
 		if (!errorMessage.toLowerCase().includes("moveabort")) return undefined;
 
+		/*
+			MoveAbort(MoveLocation { module: ModuleId { address: 8d8946c2a433e2bf795414498d9f7b32e04aca8dbf35a20257542dc51406242b, name: Identifier("orderbook") }, function: 11, instruction: 117, function_name: Some("fill_market_order") }, 3005) in command 2
+
+			MoveAbort(MoveLocation { module: ModuleId { address: 7c995f9c0c0553c0f3bfac7cf3c8b85716f0ca522305586bd0168ca20aeed277, name: Identifier("clearing_house") }, function: 37, instruction: 17, function_name: Some("place_limit_order") }, 1) in command 1
+		*/
+
 		const moveErrorCode = (inputs: {
 			errorMessage: string;
 		}): MoveErrorCode | undefined => {
@@ -833,19 +856,25 @@ export class Helpers {
 		const { errorMessage, moveErrors } = inputs;
 
 		const parsed = this.parseMoveErrorMessage({ errorMessage });
+		if (!parsed || !(parsed.packageId in moveErrors)) return undefined;
+
+		let error: string;
 		if (
-			!parsed ||
-			!(parsed.packageId in moveErrors) ||
-			!(parsed.module in moveErrors[parsed.packageId]) ||
-			!(parsed.errorCode in moveErrors[parsed.packageId][parsed.module])
-		)
-			return undefined;
+			parsed.module in moveErrors[parsed.packageId] &&
+			parsed.errorCode in moveErrors[parsed.packageId][parsed.module]
+		) {
+			error =
+				moveErrors[parsed.packageId][parsed.module][parsed.errorCode];
+		} else if (
+			"ANY" in moveErrors[parsed.packageId] &&
+			parsed.errorCode in moveErrors[parsed.packageId]["ANY"]
+		) {
+			error = moveErrors[parsed.packageId]["ANY"][parsed.errorCode];
+		} else return undefined;
 
 		return {
 			...parsed,
-			error: moveErrors[parsed.packageId][parsed.module][
-				parsed.errorCode
-			],
+			error,
 		};
 	}
 

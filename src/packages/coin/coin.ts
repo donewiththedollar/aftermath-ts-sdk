@@ -61,6 +61,10 @@ export class Coin extends Caller {
 		coinObjectType:
 			"0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin",
 		/**
+		 * The maximum number of decimals
+		 */
+		maxCoinDecimals: 18,
+		/**
 		 * Default decimals for various blockchains or ecosystems. For instance,
 		 * "sui" => 9, "evm" => 18, etc.
 		 */
@@ -114,7 +118,7 @@ export class Coin extends Caller {
 	constructor(
 		public readonly coinType: CoinType | undefined = undefined,
 		config?: CallerConfig,
-		private readonly Provider?: AftermathApi
+		public readonly Provider?: AftermathApi
 	) {
 		super(config, "coins");
 		this.coinType = coinType;
@@ -211,7 +215,11 @@ export class Coin extends Caller {
 	}): Promise<CoinMetadaWithInfo[]> {
 		return this.fetchApi<CoinMetadaWithInfo[], { coins: CoinType[] }>(
 			"metadata",
-			inputs
+			{
+				coins: inputs.coins.map((coin) =>
+					Helpers.addLeadingZeroesToType(coin)
+				),
+			}
 		);
 	}
 
